@@ -41,7 +41,7 @@ export default class MyGame extends Phaser.Scene {
     this.player.setCollideWorldBounds(true);
     this.physics.add.collider(this.player, platforms);
 
-    //animation
+    // animation
     this.anims.create({
       key: "turn",
       frames: [{ key: "dude", frame: 4 }],
@@ -59,16 +59,66 @@ export default class MyGame extends Phaser.Scene {
       frameRate: 10,
       repeat: -1,
     });
+
+    // stars
+    const stars = this.physics.add.group({
+      key: "star",
+      repeat: 11,
+      setXY: { x: 12, y: 0, stepX: 70 },
+    });
+    stars.children.iterate((child) => {
+      child.setBounceY(Phaser.Math.FloatBetween(0.4, 0.8));
+    });
+    this.physics.add.collider(stars, platforms);
+    const collect = (player, star) => {
+      star.disableBody(true, true);
+      score += 1;
+      scoreText.setText("Score: " + score);
+
+      if (stars.countActive(true) === 0) {
+        stars.children.iterate((child) => {
+          child.enableBody(true, child.x, 0, true, true);
+        });
+
+        var x =
+          player.x < 400
+            ? Phaser.Math.Between(400, 800)
+            : Phaser.Math.Between(0, 400);
+
+        const bomb = bombs.create(x, 16, "bomb");
+        bomb.setBounce(1);
+        bomb.setCollideWorldBounds(true);
+        bomb.setVelocity(Phaser.Math.Between(-200, 200), 20);
+      }
+    };
+    this.physics.add.overlap(this.player, stars, collect, null, this);
+
+    // bombs
+    const bombs = this.physics.add.group();
+    this.physics.add.collider(bombs, platforms);
+    const bombTouched = (player, bomb) => {
+      this.physics.pause();
+      this.player.setTint(0xff000);
+      this.player.anims.play("turn");
+    };
+    this.physics.add.collider(this.player, bombs, bombTouched, null, this);
+
+    // score text
+    const scoreText = this.add.text(15, 15, "score: 0", {
+      fontSize: "32px",
+      color: "#ff00ff",
+    });
+    let score = 0;
   }
 
   // 매 초마다 실행하고 싶은 것, 틱당 실행함, 움직임, 충돌 등
   update() {
     const cursors = this.input.keyboard.createCursorKeys();
     if (cursors.left.isDown) {
-      this.player.setVelocityX(-160);
+      this.player.setVelocityX(-240);
       this.player.anims.play("left", true);
     } else if (cursors.right.isDown) {
-      this.player.setVelocityX(160);
+      this.player.setVelocityX(240);
       this.player.anims.play("right", true);
     } else {
       this.player.setVelocityX(0);
